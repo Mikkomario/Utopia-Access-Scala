@@ -18,6 +18,24 @@ import java.nio.charset.Charset
 
 object Headers extends FromModelFactory[Headers]
 {   
+    // ATTRIBUTES    ---------------------
+    
+    /**
+     * An empty set of headers
+     */
+    val empty = Headers()
+    
+    
+    // COMPUTED PROPERTIES    ------------
+    
+    /**
+     * A set of headers containing a date specification
+     */
+    def currentDateHeaders = empty.withCurrentDate
+    
+    
+    // OPERATORS    ----------------------
+    
     override def apply(model: template.Model[Property]) = 
     {
         // TODO: Handle cases where values are not strings
