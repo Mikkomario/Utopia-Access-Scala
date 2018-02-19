@@ -15,6 +15,7 @@ import java.time.ZoneOffset
 import scala.collection.immutable.HashMap
 import utopia.flow.util.Equatable
 import java.nio.charset.Charset
+import utopia.flow.datastructure.immutable.Value
 
 object Headers extends FromModelFactory[Headers]
 {   
@@ -98,6 +99,11 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
             None
         }
     }
+    
+    /**
+     * 	The length of the response body in octets (8-bit bytes)
+     */
+    def contentLength = apply("Content-Length").flatMap(_.int).getOrElse(0)
     
     /**
      * The Date general-header field represents the date and time at which the message was 
@@ -269,7 +275,6 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     /*
      * - Accept-Charset
      * - Accept-Language (?)
-     * - Content-Length (?)
      * - Content-Encoding
      * - Content-Language
      * - Expires (?)
