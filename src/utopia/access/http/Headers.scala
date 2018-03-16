@@ -127,6 +127,11 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      */
     def withCurrentDate = withDate(Instant.now())
     
+    /**
+     * Whether the data is chunked and the content length omitted
+     */
+    def isChunked = apply("Transfer-Encoding").contains("chunked")
+    
     
     // OPERATORS    ---------------
     
