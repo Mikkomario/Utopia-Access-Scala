@@ -26,7 +26,7 @@ object ContentTypeTest extends App
     assert(ContentCategory.parse(customString) == customCategory)
     
     // Tests content type parsing
-    val json = Application / "json"
+    val json = Application.json
     
     assert(json.toString() == "application/json")
     assert(ContentType.parse(json.toString()).exists { _ == json })
