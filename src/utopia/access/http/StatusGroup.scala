@@ -1,5 +1,26 @@
 package utopia.access.http
 
+object StatusGroup
+{
+    /**
+     * Finds the best suited status group for the provided status code
+     * @param statusCode The status code [100, 600[
+     */
+    def forCode(statusCode: Int) = 
+    {
+        if (statusCode < 200)
+            Information;
+        else if (statusCode < 300)
+            Success;
+        else if (statusCode < 400)
+            Redirect;
+        else if (statusCode < 500)
+            ClientError;
+        else
+            ServerError;
+    }
+}
+
 /**
  * StatusGroups describe a larger type of html statuses which includes multiple more specific 
  * statuses.

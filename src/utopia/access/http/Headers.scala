@@ -15,9 +15,28 @@ import java.time.ZoneOffset
 import scala.collection.immutable.HashMap
 import utopia.flow.util.Equatable
 import java.nio.charset.Charset
+import utopia.flow.datastructure.immutable.Value
 
 object Headers extends FromModelFactory[Headers]
 {   
+    // ATTRIBUTES    ---------------------
+    
+    /**
+     * An empty set of headers
+     */
+    val empty = Headers()
+    
+    
+    // COMPUTED PROPERTIES    ------------
+    
+    /**
+     * A set of headers containing a date specification
+     */
+    def currentDateHeaders = empty.withCurrentDate
+    
+    
+    // OPERATORS    ----------------------
+    
     override def apply(model: template.Model[Property]) = 
     {
         // TODO: Handle cases where values are not strings
@@ -82,6 +101,11 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     }
     
     /**
+     * 	The length of the response body in octets (8-bit bytes)
+     */
+    def contentLength = apply("Content-Length").flatMap(_.int).getOrElse(0)
+    
+    /**
      * The Date general-header field represents the date and time at which the message was 
      * originated, having the same semantics as orig-date in RFC 822. The field value is an 
      * HTTP-date, as described in section 3.3.1; it MUST be sent in RFC 1123 [8]-date format.
@@ -102,6 +126,11 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      * Creates a new set of headers with the updated message date / time
      */
     def withCurrentDate = withDate(Instant.now())
+    
+    /**
+     * Whether the data is chunked and the content length omitted
+     */
+    def isChunked = apply("Transfer-Encoding").contains("chunked")
     
     
     // OPERATORS    ---------------
@@ -251,7 +280,6 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     /*
      * - Accept-Charset
      * - Accept-Language (?)
-     * - Content-Length (?)
      * - Content-Encoding
      * - Content-Language
      * - Expires (?)

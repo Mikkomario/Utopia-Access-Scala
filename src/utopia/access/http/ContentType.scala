@@ -1,11 +1,13 @@
 package utopia.access.http
 
+import utopia.access.http.ContentCategory._
+
 import scala.collection.immutable.Map
 import scala.collection.immutable.HashMap
 import java.net.URLConnection
 
 object ContentType
-{
+{   
     // OTHER METHODS    ---------------------
     
     /**

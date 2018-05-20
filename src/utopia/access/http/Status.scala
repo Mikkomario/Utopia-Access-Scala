@@ -1,20 +1,34 @@
 package utopia.access.http
 
+import utopia.flow.util.Equatable
+
 /**
  * Different statuses are used for signaling different response roles<br>
  * See also: https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html [referenced: 25.11.2017]
  * @author Mikko Hilpinen
  * @since 20.8.2017
  */
-case class Status(name: String, code: Int, group: StatusGroup)
+class Status(val name: String, val code: Int) extends Equatable
 {
+    // ATTRIBUTES    -----------------------
+    
+    /**
+     * The status group this particular status belongs to
+     */
+    val group = StatusGroup.forCode(code)
+    
+    
+    // IMPLEMENTED    ----------------------
+    
+    override def properties = Vector(code)
+    
     override def toString = s"$name ($code)"    
 }
 
 /**
  * The request has succeeded.
  */
-object OK extends Status("OK", 200, Success)
+case object OK extends Status("OK", 200)
 
 /**
  * The request has been fulfilled and resulted in a new resource being created. 
@@ -27,7 +41,7 @@ object OK extends Status("OK", 200, Success)
  * If the action cannot be carried out immediately, the server SHOULD respond with 202 
  * (Accepted) response instead.
  */
-object Created extends Status("Created", 201, Success)
+case object Created extends Status("Created", 201)
 
 /**
  * The request has been accepted for processing, but the processing has not been completed. 
@@ -42,7 +56,7 @@ object Created extends Status("Created", 201, Success)
  * current status and either a pointer to a status monitor or some estimate of when the user can 
  * expect the request to be fulfilled.
  */
-object Accepted extends Status("Accepted", 202, Success)
+case object Accepted extends Status("Accepted", 202)
 
 /**
  * The server has fulfilled the request but does not need to return an entity-body, and might 
@@ -57,7 +71,7 @@ object Accepted extends Status("Accepted", 202, Success)
  * The 204 response MUST NOT include a message-body, and thus is always terminated by the first 
  * empty line after the header fields.
  */
-object NoContent extends Status("No Content", 204, Success)
+case object NoContent extends Status("No Content", 204)
 
 /**
  * If the client has performed a conditional GET request and access is allowed, but the document 
@@ -65,15 +79,15 @@ object NoContent extends Status("No Content", 204, Success)
  * MUST NOT contain a message-body, and thus is always terminated by the first empty line after the 
  * header fields.
  */
-object NotModified extends Status("Not Modified", 304, Redirect)
+case object NotModified extends Status("Not Modified", 304)
 
 /**
  * The request could not be understood by the server due to malformed syntax. The client SHOULD NOT 
  * repeat the request without modifications.
  */
-object BadRequest extends Status("Bad Request", 400, ClientError)
+case object BadRequest extends Status("Bad Request", 400)
 
-object Unauthorized extends Status("Unauthorized", 401, ClientError)
+case object Unauthorized extends Status("Unauthorized", 401)
 
 /**
  * The server understood the request, but is refusing to fulfill it. Authorization will not help 
@@ -82,7 +96,7 @@ object Unauthorized extends Status("Unauthorized", 401, ClientError)
  * refusal in the entity. If the server does not wish to make this information available to the 
  * client, the status code 404 (Not Found) can be used instead.
  */
-object Forbidden extends Status("Forbidden", 403, ClientError)
+case object Forbidden extends Status("Forbidden", 403)
 
 /**
  * The server has not found anything matching the Request-URI. No indication is given of whether 
@@ -92,26 +106,26 @@ object Forbidden extends Status("Forbidden", 403, ClientError)
  * does not wish to reveal exactly why the request has been refused, or when no other response is 
  * applicable.
  */
-object NotFound extends Status("Not Found", 404, ClientError)
+case object NotFound extends Status("Not Found", 404)
 
 /**
  * The method specified in the Request-Line is not allowed for the resource identified by the 
  * Request-URI. The response MUST include an Allow header containing a list of valid methods for 
  * the requested resource.
  */
-object MethodNotAllowed extends Status("Method Not Allowed", 405, ClientError)
+case object MethodNotAllowed extends Status("Method Not Allowed", 405)
 
 /**
  * The server encountered an unexpected condition which prevented it from fulfilling the request.
  */
-object InternalServerError extends Status("Internal Server Error", 500, ServerError)
+case object InternalServerError extends Status("Internal Server Error", 500)
 
 /**
  * The server does not support the functionality required to fulfill the request. This is the 
  * appropriate response when the server does not recognize the request method and is not 
  * capable of supporting it for any resource.
  */
-object NotImplemented extends Status("Not Implemented", 501, ServerError)
+case object NotImplemented extends Status("Not Implemented", 501)
 
 /**
  * The server is currently unable to handle the request due to a temporary overloading or 
@@ -120,5 +134,5 @@ object NotImplemented extends Status("Not Implemented", 501, ServerError)
  * Retry-After header. If no Retry-After is given, the client SHOULD handle the response as it 
  * would for a 500 response.
  */
-object ServiceUnavailable extends Status("Service Unavailable", 503, ServerError)
+case object ServiceUnavailable extends Status("Service Unavailable", 503)
 
