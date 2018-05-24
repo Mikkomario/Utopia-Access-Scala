@@ -16,6 +16,7 @@ import scala.collection.immutable.HashMap
 import utopia.flow.util.Equatable
 import java.nio.charset.Charset
 import utopia.flow.datastructure.immutable.Value
+import java.nio.charset.StandardCharsets
 
 object Headers extends FromModelFactory[Headers]
 {   
@@ -101,6 +102,11 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
         else
             Some(accepted.maxBy(_._2)._1)
     }
+    
+    /**
+     * The charset preferred by the client. UTF 8 if the client doesn't specify any other charset
+     */
+    def preferredCharsetOrUTF8 = preferredCharset getOrElse StandardCharsets.UTF_8
     
     /**
      * The type of the associated content. None if not defined.
