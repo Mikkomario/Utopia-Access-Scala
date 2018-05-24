@@ -80,6 +80,29 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     def acceptedTypes = commaSeparatedValues("Accept").flatMap { ContentType.parse }
     
     /**
+     * The charsets accepted by the client. Each charset is matched with a weight modifier. Higher 
+     * weight charsets should be preferred by the server.
+     */
+    def acceptedCharsets = commaSeparatedValues("Accept-Charset").map(_.split(";")).flatMap
+    {
+        set => 
+            val weight = (if (set.length > 1) set(1).double else None) getOrElse 1.0
+            Try(Charset.forName(set.head)).toOption.map(_ -> weight)
+    }.toMap
+    
+    /**
+     * The charset preferred by the client
+     */
+    def preferredCharset = 
+    {
+        val accepted = acceptedCharsets
+        if (accepted.isEmpty)
+            None
+        else
+            Some(accepted.maxBy(_._2)._1)
+    }
+    
+    /**
      * The type of the associated content. None if not defined.
      */
     def contentType = semicolonSeparatedValues("Content-Type").headOption.flatMap { ContentType.parse }
@@ -242,6 +265,27 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     def accepts(contentType: ContentType) = acceptedTypes.contains(contentType)
     
     /**
+     * Finds the first accepted type from the provided options
+     */
+    def getAcceptedType(options: Seq[ContentType]) = 
+    {
+        val accepted = acceptedTypes
+        options.find(accepted.contains)
+    }
+    
+    /**
+     * Finds the most preferred accepted charset from the provided options
+     */
+    def getAcceptedCharset(options: Seq[Charset]) = 
+    {
+        val accepted = acceptedCharsets.filterKeys(options.contains)
+        if (accepted.isEmpty)
+            None
+        else
+            Some(accepted.maxBy(_._2)._1)
+    }
+    
+    /**
      * Overwrites the set of accepted content types
      */
     def withAcceptedTypes(types: Seq[ContentType]) = withHeader("Accept", types.map { _.toString })
@@ -250,6 +294,24 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      * Adds a new content type to the list of content types accepted by the client
      */
     def withTypeAccepted(contentType: ContentType) = this + ("Accept", contentType.toString)
+    
+    /**
+     * Overwrites the set of accepted charsets
+     */
+    def withAcceptedCharsets(charsets: Map[Charset, Double]) = withHeader("Accept-Charset", 
+            charsets.map{ case (c, w) => s"${c.name()};q=$w" }.toSeq, ",");
+    
+    /**
+     * Overwrites the set of accepted charsets
+     */
+    def withAcceptedCharsets(charsets: Seq[Charset]) = withHeader("Accept-Charset", 
+            charsets.map(_.name()), ",");
+    
+    /**
+     * Adds a new charset to the list of accepted charsets
+     */
+    def withCharsetAccepted(charset: Charset, weight: Double = 1) = this + ("Accept-Charset", 
+            s"${charset.name()};q=$weight");
     
     /**
      * Creates a new headers with the content type (and character set) specified
@@ -278,12 +340,10 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     // TODO: Implement support for following predefined headers:
     // https://en.wikipedia.org/wiki/List_of_HTTP_header_fields
     /*
-     * - Accept-Charset
      * - Accept-Language (?)
      * - Content-Encoding
      * - Content-Language
      * - Expires (?)
-     * - Location
      * - If-Modified-Since
      */
 }
