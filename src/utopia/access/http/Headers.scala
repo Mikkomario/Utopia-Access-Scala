@@ -202,6 +202,11 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
         }
     }
     
+    /**
+     * Combines two headers with each other. If the headers have same keys, uses the keys from the 
+     * rightmost headers
+     */
+    def ++(headers: Headers) = Headers(fields ++ headers.fields)
     
     
     // OTHER METHODS    -----------
