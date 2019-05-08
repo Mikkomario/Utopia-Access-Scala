@@ -2,29 +2,8 @@ package utopia.access.http
 
 import utopia.flow.util.Equatable
 
-/**
- * Different statuses are used for signaling different response roles<br>
- * See also: https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html [referenced: 25.11.2017]
- * @author Mikko Hilpinen
- * @since 20.8.2017
- */
-class Status(val name: String, val code: Int) extends Equatable
+object Status
 {
-    // ATTRIBUTES    -----------------------
-    
-    /**
-     * The status group this particular status belongs to
-     */
-    val group = StatusGroup.forCode(code)
-    
-    
-    // IMPLEMENTED    ----------------------
-    
-    override def properties = Vector(code)
-    
-    override def toString = s"$name ($code)"
-    
-    
     // VALUES   ----------------------------
     
     /**
@@ -137,5 +116,28 @@ class Status(val name: String, val code: Int) extends Equatable
       * would for a 500 response.
       */
     case object ServiceUnavailable extends Status("Service Unavailable", 503)
+}
+
+/**
+ * Different statuses are used for signaling different response roles<br>
+ * See also: https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html [referenced: 25.11.2017]
+ * @author Mikko Hilpinen
+ * @since 20.8.2017
+ */
+class Status(val name: String, val code: Int) extends Equatable
+{
+    // ATTRIBUTES    -----------------------
+    
+    /**
+     * The status group this particular status belongs to
+     */
+    val group = StatusGroup.forCode(code)
+    
+    
+    // IMPLEMENTED    ----------------------
+    
+    override def properties = Vector(code)
+    
+    override def toString = s"$name ($code)"
 }
 
