@@ -15,7 +15,6 @@ import java.time.ZoneOffset
 import scala.collection.immutable.HashMap
 import utopia.flow.util.Equatable
 import java.nio.charset.Charset
-import utopia.flow.datastructure.immutable.Value
 import java.nio.charset.StandardCharsets
 
 object Headers extends FromModelFactory[Headers]
@@ -41,8 +40,7 @@ object Headers extends FromModelFactory[Headers]
     override def apply(model: template.Model[Property]) = 
     {
         // TODO: Handle cases where values are not strings
-        val fields = model.attributesWithValue.map { property => (property.name, 
-                property.value.stringOr()) }.toMap
+        val fields = model.attributesWithValue.map { property => (property.name, property.value.getString) }.toMap
         Some(new Headers(fields))
     }
     
@@ -65,7 +63,7 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     
     override def properties = Vector(fields)
     
-    override def toModel = Model(fields.toVector.map { case (key, value) => key -> value.toValue });
+    override def toModel = Model(fields.toVector.map { case (key, value) => key -> value.toValue })
     
     
     // COMPUTED PROPERTIES    -----
@@ -175,14 +173,10 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      */
     def +(headerName: String, values: Seq[String], regex: String): Headers = 
     {
-        if (!values.isEmpty)
-        {
+        if (values.nonEmpty)
             this + (headerName, values.reduce { _ + regex + _ })
-        }
         else
-        {
             this
-        }
     }
     
     /**
@@ -197,9 +191,7 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
             Headers(fields + (headerName -> newValue))
         }
         else
-        {
             withHeader(headerName, value)
-        }
     }
     
     /**
@@ -253,7 +245,7 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      * version of that header, if there is one.
      */
     def withTimeHeader(headerName: String, value: Instant) = withHeader(headerName, 
-            DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.ofInstant(value, ZoneOffset.UTC)));
+            DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.ofInstant(value, ZoneOffset.UTC)))
     
     /**
      * Checks whether a method is allowed for the server side resource
@@ -310,19 +302,18 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      * Overwrites the set of accepted charsets
      */
     def withAcceptedCharsets(charsets: Map[Charset, Double]) = withHeader("Accept-Charset", 
-            charsets.map{ case (c, w) => s"${c.name()};q=$w" }.toSeq, ",");
+            charsets.map{ case (c, w) => s"${c.name()};q=$w" }.toSeq)
     
     /**
      * Overwrites the set of accepted charsets
      */
-    def withAcceptedCharsets(charsets: Seq[Charset]) = withHeader("Accept-Charset", 
-            charsets.map(_.name()), ",");
+    def withAcceptedCharsets(charsets: Seq[Charset]) = withHeader("Accept-Charset", charsets.map(_.name()))
     
     /**
      * Adds a new charset to the list of accepted charsets
      */
     def withCharsetAccepted(charset: Charset, weight: Double = 1) = this + ("Accept-Charset", 
-            s"${charset.name()};q=$weight");
+            s"${charset.name()};q=$weight")
     
     /**
      * Creates a new headers with the content type (and character set) specified
@@ -330,13 +321,13 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      * @param charset then encoding that was used used when the content was written to the response
      */
     def withContentType(contentType: ContentType, charset: Option[Charset] = None) = this + 
-            ("Content-Type", contentType.toString + charset.map { ";" + _.name() }.getOrElse(""));
+            ("Content-Type", contentType.toString + charset.map { ";" + _.name() }.getOrElse(""))
     
     /**
      * Creates a new header with the time when the message associated with this header was originated. 
      * If the message was just created, you may wish to use #withCurrentDate
      */
-    def withDate(time: Instant) = withTimeHeader("Date", time);
+    def withDate(time: Instant) = withTimeHeader("Date", time)
     
     /**
      * Creates a new header with the time when the resource was last modified

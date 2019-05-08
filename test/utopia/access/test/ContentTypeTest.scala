@@ -29,12 +29,12 @@ object ContentTypeTest extends App
     val json = Application.json
     
     assert(json.toString() == "application/json")
-    assert(ContentType.parse(json.toString()).exists { _ == json })
+    assert(ContentType.parse(json.toString()).contains(json))
     
     val customType = ContentType(customCategory, "custom", HashMap("att1" -> "a", "att2" -> "b"))
     
     println(customType)
-    assert(ContentType.parse(customType.toString()).exists { _ == customType })
+    assert(ContentType.parse(customType.toString()).contains(customType))
     
     // Tests content type guessing
     assert(ContentType.guessFrom("test.jpg").isDefined)

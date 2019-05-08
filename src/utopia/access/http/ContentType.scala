@@ -1,7 +1,5 @@
 package utopia.access.http
 
-import utopia.access.http.ContentCategory._
-
 import scala.collection.immutable.Map
 import scala.collection.immutable.HashMap
 import java.net.URLConnection
@@ -27,9 +25,9 @@ object ContentType
             val subTypeAndParams = categoryAndRest(1).split(";")
             
             val params: Map[String, String] = if (subTypeAndParams.size < 2) HashMap() else 
-                    subTypeAndParams.tail.map { _.split("=", 2) }.filter { _.size == 2 }.map { 
+                    subTypeAndParams.tail.map { _.split("=", 2) }.filter { _.length == 2 }.map {
                     arr => (arr(0), arr(1)) }.toMap
-                    
+            
             Some(ContentType(ContentCategory.parse(categoryAndRest(0)), subTypeAndParams(0), params))
         }
     }
@@ -49,8 +47,7 @@ object ContentType
  * @author Mikko Hilpinen
  * @since 20.8.2017
  */
-case class ContentType(val category: ContentCategory, val subType: String, 
-        val parameters: Map[String, String] = HashMap())
+case class ContentType(category: ContentCategory, subType: String, parameters: Map[String, String] = HashMap())
 {
     // IMPLEMENTED METHODS    --------------
     

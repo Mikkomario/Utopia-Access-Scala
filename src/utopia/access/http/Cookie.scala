@@ -14,20 +14,15 @@ object Cookie extends FromModelFactory[Cookie]
      * Parses a cookie from the provided model. The model must have a 'name' property or None is 
      * returned.
      */
-    override def apply(model: template.Model[Property]) = 
+    override def apply(model: template.Model[Property]): Option[Cookie] =
     {
         // Name property is required
         val name = model("name").string
         
         if (name.isDefined)
-        {
-            Some(Cookie(name.get, model("value"), model("life_limit_seconds").int, 
-                    model("secure").booleanOr(false)))
-        }
+            Some(Cookie(name.get, model("value"), model("life_limit_seconds").int, model("secure").getBoolean))
         else
-        {
             None
-        }
     }
 }
 
@@ -37,11 +32,10 @@ object Cookie extends FromModelFactory[Cookie]
  * @author Mikko Hilpinen
  * @since 3.9.2017
  */
-case class Cookie(val name: String, val value: Value, val lifeLimitSeconds: Option[Int] = None, 
-        val isSecure: Boolean = false) extends ModelConvertible
+case class Cookie(name: String, value: Value, lifeLimitSeconds: Option[Int] = None, isSecure: Boolean = false) extends ModelConvertible
 {
     // IMPLEMENTED METHODS / PROPERTIES    ------------
     
-    override def toModel = Model(Vector("name" -> name, "value" -> value, 
-            "life_limit_seconds" -> lifeLimitSeconds, "secure" -> isSecure));
+    override def toModel = Model(Vector("name" -> name, "value" -> value, "life_limit_seconds" -> lifeLimitSeconds,
+        "secure" -> isSecure))
 }
