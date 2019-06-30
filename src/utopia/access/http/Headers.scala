@@ -8,14 +8,17 @@ import utopia.flow.generic.FromModelFactory
 import utopia.flow.datastructure.template.Property
 import utopia.flow.datastructure.template
 import java.time.format.DateTimeFormatter
+
 import scala.util.Try
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.ZoneOffset
+
 import scala.collection.immutable.HashMap
 import utopia.flow.util.Equatable
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
+import java.util.Base64
 
 object Headers extends FromModelFactory[Headers]
 {   
@@ -158,6 +161,11 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      * Whether the data is chunked and the content length omitted
      */
     def isChunked = apply("Transfer-Encoding").contains("chunked")
+    
+    /**
+      * @return The provided authorization. Eg. "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==". None if no auth header is provided.
+      */
+    def authorization = apply("Authorization")
     
     
     // OPERATORS    ---------------
@@ -338,6 +346,26 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      * Creates a new header with a specified location information
      */
     def withLocation(location: String) = withHeader("Location", location)
+    
+    /**
+      * Creates a copy of these headers that contains authorization
+      * @param authString The authorization string. Eg. "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="
+      * @return A copy of these headers with authorization
+      */
+    def withAuthorization(authString: String) = withHeader("Authorization", authString)
+    
+    /**
+      * Creates a copy of these headers that uses basic authentication
+      * @param userName Username
+      * @param password Password
+      * @return A copy of these headers with basic authentication header included
+      */
+    def withBasicAuthorization(userName: String, password: String) =
+    {
+        // Encodes the username + password with base64
+        val encoded = Base64.getEncoder.encodeToString((userName + ":" + password).getBytes())
+        withAuthorization("Basic " + encoded)
+    }
     
     // TODO: Implement support for following predefined headers:
     // https://en.wikipedia.org/wiki/List_of_HTTP_header_fields
