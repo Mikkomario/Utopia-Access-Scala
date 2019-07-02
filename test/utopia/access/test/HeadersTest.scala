@@ -18,7 +18,7 @@ object HeadersTest extends App
     val contentType = Text/"plain"
     val empty = Headers()
     
-    assert(empty.withContentType(contentType).contentType.exists { _ == contentType })
+    assert(empty.withContentType(contentType).contentType.contains(contentType))
     
     val allowed = Vector(Get, Post)
     val allowHeaders = empty.withAllowedMethods(allowed)
@@ -30,9 +30,9 @@ object HeadersTest extends App
     
     val epoch = Instant.EPOCH
     
-    assert(empty.withDate(epoch).date.exists { _ == epoch })
+    assert(empty.withDate(epoch).date.contains(epoch))
     
-    assert(Headers(allowHeaders.toModel).exists { _ == allowHeaders })
+    assert(Headers(allowHeaders.toModel).contains(allowHeaders))
     
     println("Success!")
 }

@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="utopia-flow">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../Utopia-Flow-Scala/out/artifacts/utopia_flow/utopia-flow.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

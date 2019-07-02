@@ -8,14 +8,17 @@ import utopia.flow.generic.FromModelFactory
 import utopia.flow.datastructure.template.Property
 import utopia.flow.datastructure.template
 import java.time.format.DateTimeFormatter
+
 import scala.util.Try
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.ZoneOffset
+
 import scala.collection.immutable.HashMap
 import utopia.flow.util.Equatable
 import java.nio.charset.Charset
-import utopia.flow.datastructure.immutable.Value
+import java.nio.charset.StandardCharsets
+import java.util.Base64
 
 object Headers extends FromModelFactory[Headers]
 {   
@@ -40,8 +43,7 @@ object Headers extends FromModelFactory[Headers]
     override def apply(model: template.Model[Property]) = 
     {
         // TODO: Handle cases where values are not strings
-        val fields = model.attributesWithValue.map { property => (property.name, 
-                property.value.stringOr()) }.toMap
+        val fields = model.attributesWithValue.map { property => (property.name, property.value.getString) }.toMap
         Some(new Headers(fields))
     }
     
@@ -64,7 +66,7 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     
     override def properties = Vector(fields)
     
-    override def toModel = Model(fields.toVector.map { case (key, value) => key -> value.toValue });
+    override def toModel = Model(fields.toVector.map { case (key, value) => key -> value.toValue })
     
     
     // COMPUTED PROPERTIES    -----
@@ -78,6 +80,34 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      * The content types accepted by the client
      */
     def acceptedTypes = commaSeparatedValues("Accept").flatMap { ContentType.parse }
+    
+    /**
+     * The charsets accepted by the client. Each charset is matched with a weight modifier. Higher 
+     * weight charsets should be preferred by the server.
+     */
+    def acceptedCharsets = commaSeparatedValues("Accept-Charset").map(_.split(";")).flatMap
+    {
+        set => 
+            val weight = (if (set.length > 1) set(1).double else None) getOrElse 1.0
+            Try(Charset.forName(set.head)).toOption.map(_ -> weight)
+    }.toMap
+    
+    /**
+     * The charset preferred by the client
+     */
+    def preferredCharset = 
+    {
+        val accepted = acceptedCharsets
+        if (accepted.isEmpty)
+            None
+        else
+            Some(accepted.maxBy(_._2)._1)
+    }
+    
+    /**
+     * The charset preferred by the client. UTF 8 if the client doesn't specify any other charset
+     */
+    def preferredCharsetOrUTF8 = preferredCharset getOrElse StandardCharsets.UTF_8
     
     /**
      * The type of the associated content. None if not defined.
@@ -132,6 +162,11 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      */
     def isChunked = apply("Transfer-Encoding").contains("chunked")
     
+    /**
+      * @return The provided authorization. Eg. "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==". None if no auth header is provided.
+      */
+    def authorization = apply("Authorization")
+    
     
     // OPERATORS    ---------------
     
@@ -146,14 +181,10 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      */
     def +(headerName: String, values: Seq[String], regex: String): Headers = 
     {
-        if (!values.isEmpty)
-        {
+        if (values.nonEmpty)
             this + (headerName, values.reduce { _ + regex + _ })
-        }
         else
-        {
             this
-        }
     }
     
     /**
@@ -168,11 +199,14 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
             Headers(fields + (headerName -> newValue))
         }
         else
-        {
             withHeader(headerName, value)
-        }
     }
     
+    /**
+     * Combines two headers with each other. If the headers have same keys, uses the keys from the 
+     * rightmost headers
+     */
+    def ++(headers: Headers) = Headers(fields ++ headers.fields)
     
     
     // OTHER METHODS    -----------
@@ -219,7 +253,7 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      * version of that header, if there is one.
      */
     def withTimeHeader(headerName: String, value: Instant) = withHeader(headerName, 
-            DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.ofInstant(value, ZoneOffset.UTC)));
+            DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.ofInstant(value, ZoneOffset.UTC)))
     
     /**
      * Checks whether a method is allowed for the server side resource
@@ -242,6 +276,27 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     def accepts(contentType: ContentType) = acceptedTypes.contains(contentType)
     
     /**
+     * Finds the first accepted type from the provided options
+     */
+    def getAcceptedType(options: Seq[ContentType]) = 
+    {
+        val accepted = acceptedTypes
+        options.find(accepted.contains)
+    }
+    
+    /**
+     * Finds the most preferred accepted charset from the provided options
+     */
+    def getAcceptedCharset(options: Seq[Charset]) = 
+    {
+        val accepted = acceptedCharsets.filterKeys(options.contains)
+        if (accepted.isEmpty)
+            None
+        else
+            Some(accepted.maxBy(_._2)._1)
+    }
+    
+    /**
      * Overwrites the set of accepted content types
      */
     def withAcceptedTypes(types: Seq[ContentType]) = withHeader("Accept", types.map { _.toString })
@@ -252,18 +307,35 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     def withTypeAccepted(contentType: ContentType) = this + ("Accept", contentType.toString)
     
     /**
+     * Overwrites the set of accepted charsets
+     */
+    def withAcceptedCharsets(charsets: Map[Charset, Double]) = withHeader("Accept-Charset", 
+            charsets.map{ case (c, w) => s"${c.name()};q=$w" }.toSeq)
+    
+    /**
+     * Overwrites the set of accepted charsets
+     */
+    def withAcceptedCharsets(charsets: Seq[Charset]) = withHeader("Accept-Charset", charsets.map(_.name()))
+    
+    /**
+     * Adds a new charset to the list of accepted charsets
+     */
+    def withCharsetAccepted(charset: Charset, weight: Double = 1) = this + ("Accept-Charset", 
+            s"${charset.name()};q=$weight")
+    
+    /**
      * Creates a new headers with the content type (and character set) specified
      * @param contentType the type of the content
      * @param charset then encoding that was used used when the content was written to the response
      */
     def withContentType(contentType: ContentType, charset: Option[Charset] = None) = this + 
-            ("Content-Type", contentType.toString + charset.map { ";" + _.name() }.getOrElse(""));
+            ("Content-Type", contentType.toString + charset.map { ";" + _.name() }.getOrElse(""))
     
     /**
      * Creates a new header with the time when the message associated with this header was originated. 
      * If the message was just created, you may wish to use #withCurrentDate
      */
-    def withDate(time: Instant) = withTimeHeader("Date", time);
+    def withDate(time: Instant) = withTimeHeader("Date", time)
     
     /**
      * Creates a new header with the time when the resource was last modified
@@ -275,15 +347,33 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      */
     def withLocation(location: String) = withHeader("Location", location)
     
+    /**
+      * Creates a copy of these headers that contains authorization
+      * @param authString The authorization string. Eg. "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="
+      * @return A copy of these headers with authorization
+      */
+    def withAuthorization(authString: String) = withHeader("Authorization", authString)
+    
+    /**
+      * Creates a copy of these headers that uses basic authentication
+      * @param userName Username
+      * @param password Password
+      * @return A copy of these headers with basic authentication header included
+      */
+    def withBasicAuthorization(userName: String, password: String) =
+    {
+        // Encodes the username + password with base64
+        val encoded = Base64.getEncoder.encodeToString((userName + ":" + password).getBytes())
+        withAuthorization("Basic " + encoded)
+    }
+    
     // TODO: Implement support for following predefined headers:
     // https://en.wikipedia.org/wiki/List_of_HTTP_header_fields
     /*
-     * - Accept-Charset
      * - Accept-Language (?)
      * - Content-Encoding
      * - Content-Language
      * - Expires (?)
-     * - Location
      * - If-Modified-Since
      */
 }

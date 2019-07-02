@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/Utopia-Access-Scala.iml" filepath="$PROJECT_DIR$/.idea/Utopia-Access-Scala.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Utopia-Flow-Scala/Utopia-Flow-Scala.iml" filepath="$PROJECT_DIR$/../Utopia-Flow-Scala/Utopia-Flow-Scala.iml" />
+    </modules>
+  </component>
+</project>
