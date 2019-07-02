@@ -9,5 +9,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="Utopia-Flow-Scala" />
+    <orderEntry type="library" name="scala-sdk-2.12.8" level="application" />
   </component>
 </module>
