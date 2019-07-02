@@ -48,3 +48,7 @@ v1.1    -----------------------------------------
         Status, StatusGroup, Method and ContentCategory implementations are now all under their companion objects
             - This means that you need to, for example, import utopia.access.http.Status.OK instead of
             utopia.access.http.OK
+
+    Required Libraries
+    ------------------
+        - Utopia Flow 1.5+
