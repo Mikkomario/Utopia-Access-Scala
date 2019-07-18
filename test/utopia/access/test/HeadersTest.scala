@@ -32,7 +32,7 @@ object HeadersTest extends App
     
     assert(empty.withDate(epoch).date.contains(epoch))
     
-    assert(Headers(allowHeaders.toModel).contains(allowHeaders))
+    assert(Headers(allowHeaders.toModel).toOption.contains(allowHeaders))
     
     println("Success!")
 }

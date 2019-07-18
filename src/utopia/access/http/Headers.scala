@@ -9,7 +9,7 @@ import utopia.flow.datastructure.template.Property
 import utopia.flow.datastructure.template
 import java.time.format.DateTimeFormatter
 
-import scala.util.Try
+import scala.util.{Success, Try}
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.ZoneOffset
@@ -42,9 +42,8 @@ object Headers extends FromModelFactory[Headers]
     
     override def apply(model: template.Model[Property]) = 
     {
-        // TODO: Handle cases where values are not strings
-        val fields = model.attributesWithValue.map { property => (property.name, property.value.getString) }.toMap
-        Some(new Headers(fields))
+        val fields = model.attributesWithValue.flatMap { property => property.value.string.map { (property.name, _) } }.toMap
+        Success(new Headers(fields))
     }
     
     def apply(rawFields: Map[String, String] = HashMap()) = new Headers(rawFields)
