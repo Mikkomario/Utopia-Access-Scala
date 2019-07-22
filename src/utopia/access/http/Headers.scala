@@ -67,6 +67,8 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     
     override def toModel = Model(fields.toVector.map { case (key, value) => key -> value.toValue })
     
+    override def toString = toModel.toString
+    
     
     // COMPUTED PROPERTIES    -----
     
@@ -133,6 +135,11 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      * 	The length of the response body in octets (8-bit bytes)
      */
     def contentLength = apply("Content-Length").flatMap(_.int).getOrElse(0)
+    
+    /**
+      * @return Whether content length information has been provided
+      */
+    def isContentLengthProvided = isDefined("Content-Length")
     
     /**
      * The Date general-header field represents the date and time at which the message was 
@@ -209,6 +216,13 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     
     
     // OTHER METHODS    -----------
+    
+    /**
+      * Checks whether speficied header field has been defined
+      * @param headerName Header name (case-insensitive)
+      * @return Whether such a header has been provided
+      */
+    def isDefined(headerName: String) = fields.contains(headerName.toLowerCase)
     
     /**
      * Returns multiple values where the original value is split into multiple parts. Returns an 
