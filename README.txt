@@ -35,16 +35,20 @@ Usage Notes
     Like with Flow, if you wish to use typeless values, you need to call utopia.flow.generic.DataType.setup() on
     program startup.
 
-v1.1    -----------------------------------------
+
+v1.1.1    ---------------------------------------
 
     Updates & Changes
     -----------------
 
         PATCH method added
 
+        Supports Flow v1.6
+
+
     Required Libraries
     ------------------
-        - Utopia Flow 1.6+
+        - Utopia Flow v1.6+
 
 
 v1.1    -----------------------------------------
