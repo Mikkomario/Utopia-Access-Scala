@@ -36,6 +36,21 @@ Usage Notes
     program startup.
 
 
+v1.1.1    ---------------------------------------
+
+    Updates & Changes
+    -----------------
+
+        PATCH method added
+
+        Supports Flow v1.6
+
+
+    Required Libraries
+    ------------------
+        - Utopia Flow v1.6+
+
+
 v1.1    -----------------------------------------
 
     Updates & Changes

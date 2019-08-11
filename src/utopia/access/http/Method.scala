@@ -20,6 +20,10 @@ object Method
      * The DELETE method is used for deleting data on the server
      */
     case object Delete extends Method("DELETE")
+    /**
+      * PATCH method is used for updating parts of existing data on the server
+      */
+    case object Patch extends Method("PATCH")
     
     
     // ATTRIBUTES    -------------
@@ -27,7 +31,7 @@ object Method
     /**
      * The existing method values
      */
-    lazy val values = Vector(Get, Post, Put, Delete)
+    lazy val values = Vector(Get, Post, Put, Delete, Patch)
     
     
     // OTHER METHODS    ---------

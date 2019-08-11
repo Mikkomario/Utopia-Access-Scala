@@ -9,7 +9,7 @@ import utopia.flow.datastructure.template.Property
 import utopia.flow.datastructure.template
 import java.time.format.DateTimeFormatter
 
-import scala.util.Try
+import scala.util.{Success, Try}
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.ZoneOffset
@@ -42,9 +42,8 @@ object Headers extends FromModelFactory[Headers]
     
     override def apply(model: template.Model[Property]) = 
     {
-        // TODO: Handle cases where values are not strings
-        val fields = model.attributesWithValue.map { property => (property.name, property.value.getString) }.toMap
-        Some(new Headers(fields))
+        val fields = model.attributesWithValue.flatMap { property => property.value.string.map { (property.name, _) } }.toMap
+        Success(new Headers(fields))
     }
     
     def apply(rawFields: Map[String, String] = HashMap()) = new Headers(rawFields)
@@ -67,6 +66,8 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     override def properties = Vector(fields)
     
     override def toModel = Model(fields.toVector.map { case (key, value) => key -> value.toValue })
+    
+    override def toString = toModel.toString
     
     
     // COMPUTED PROPERTIES    -----
@@ -134,6 +135,11 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      * 	The length of the response body in octets (8-bit bytes)
      */
     def contentLength = apply("Content-Length").flatMap(_.int).getOrElse(0)
+    
+    /**
+      * @return Whether content length information has been provided
+      */
+    def isContentLengthProvided = isDefined("Content-Length")
     
     /**
      * The Date general-header field represents the date and time at which the message was 
@@ -210,6 +216,13 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     
     
     // OTHER METHODS    -----------
+    
+    /**
+      * Checks whether speficied header field has been defined
+      * @param headerName Header name (case-insensitive)
+      * @return Whether such a header has been provided
+      */
+    def isDefined(headerName: String) = fields.contains(headerName.toLowerCase)
     
     /**
      * Returns multiple values where the original value is split into multiple parts. Returns an 

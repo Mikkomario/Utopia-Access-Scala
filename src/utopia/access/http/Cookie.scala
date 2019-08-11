@@ -8,21 +8,23 @@ import utopia.flow.generic.FromModelFactory
 import utopia.flow.datastructure.template
 import utopia.flow.datastructure.template.Property
 
+import scala.util.{Failure, Success, Try}
+
 object Cookie extends FromModelFactory[Cookie]
 {
     /**
      * Parses a cookie from the provided model. The model must have a 'name' property or None is 
      * returned.
      */
-    override def apply(model: template.Model[Property]): Option[Cookie] =
+    override def apply(model: template.Model[Property]): Try[Cookie] =
     {
         // Name property is required
         val name = model("name").string
         
         if (name.isDefined)
-            Some(Cookie(name.get, model("value"), model("life_limit_seconds").int, model("secure").getBoolean))
+            Success(Cookie(name.get, model("value"), model("life_limit_seconds").int, model("secure").getBoolean))
         else
-            None
+            Failure(new NoSuchElementException(s"Cannot parse a Cookie from $model without 'name' property"))
     }
 }
 
