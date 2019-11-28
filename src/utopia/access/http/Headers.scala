@@ -73,6 +73,16 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     // COMPUTED PROPERTIES    -----
     
     /**
+     * @return Whether these headers are empty
+     */
+    def isEmpty = rawFields.isEmpty
+    
+    /**
+     * @return Whether these headers are not empty
+     */
+    def nonEmpty = !isEmpty
+    
+    /**
      * The methods allowed for the server resource
      */
     def allowedMethods = commaSeparatedValues("Allow").flatMap { Method.parse }
@@ -147,6 +157,11 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      * HTTP-date, as described in section 3.3.1; it MUST be sent in RFC 1123 [8]-date format.
      */
     def date = timeHeader("Date")
+    
+    /**
+     * @return Whether the date header is defined
+     */
+    def hasDate = isDefined("Date")
     
     /**
      * The location of the generated or searched resource. (Usually) contains the whole url.

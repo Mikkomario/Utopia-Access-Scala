@@ -36,6 +36,14 @@ Usage Notes
     program startup.
 
 
+v1.1.2 (Beta)   ---------------------------------
+
+    Updates & Changes
+    -----------------
+
+        isEmpty & nonEmpty methods added to Headers
+
+
 v1.1.1    ---------------------------------------
 
     Updates & Changes
