@@ -3,6 +3,7 @@ package utopia.access.http
 import scala.collection.immutable.Map
 import utopia.flow.generic.ModelConvertible
 import utopia.flow.datastructure.immutable.Model
+import utopia.flow.util.StringExtensions._
 import utopia.flow.generic.ValueConversions._
 import utopia.flow.generic.FromModelFactory
 import utopia.flow.datastructure.template.Property
@@ -19,6 +20,8 @@ import utopia.flow.util.Equatable
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import java.util.Base64
+
+import scala.io.Codec
 
 object Headers extends FromModelFactory[Headers]
 {   
@@ -187,6 +190,19 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
       * @return The provided authorization. Eg. "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==". None if no auth header is provided.
       */
     def authorization = apply("Authorization")
+    
+    /**
+     * @return Decrypted Username and password from a basic authorization header. None if the header was missing, not
+     *         a basic authorization or not properly encoded
+     */
+    def basicAuthorization = authorization.flatMap { auth =>
+        val (authType, encodedValue) = auth.splitAtFirst(" ")
+        if (authType ~== "Basic")
+            Try { Base64.getDecoder.decode(encodedValue) }.toOption.map {
+                new String(_, Codec.UTF8.charSet).splitAtFirst(":") }
+        else
+            None
+    }
     
     
     // OPERATORS    ---------------
@@ -391,7 +407,7 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     def withBasicAuthorization(userName: String, password: String) =
     {
         // Encodes the username + password with base64
-        val encoded = Base64.getEncoder.encodeToString((userName + ":" + password).getBytes())
+        val encoded = Base64.getEncoder.encodeToString((userName + ":" + password).getBytes(Codec.UTF8.charSet))
         withAuthorization("Basic " + encoded)
     }
     

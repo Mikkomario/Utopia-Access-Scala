@@ -43,6 +43,8 @@ v1.1.2 (Beta)   ---------------------------------
 
         isEmpty & nonEmpty methods added to Headers
 
+        basicAuthorization -property added to Headers
+
 
 v1.1.1    ---------------------------------------
 
