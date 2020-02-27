@@ -132,18 +132,17 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     /**
      * The character set used in the associated content. None if not defined or unrecognised
      */
-    def charset = 
-    {
-        val cTypeHeader = semicolonSeparatedValues("Content-Type")
-        if (cTypeHeader.size > 1)
-        {
-            Try(Charset.forName(cTypeHeader(1))).toOption
-        }
-        else
-        {
-            None
-        }
-    }
+    def charset = charsetString.flatMap { s => Try { Charset.forName(s) }.toOption }
+    
+    /**
+     * The name of the character set used in the associated content. None if not defined
+     */
+    def charsetString = semicolonSeparatedValues("Content-Type").getOption(1)
+    
+    /**
+     * @return Encoding specified in the content type header (in codec format)
+     */
+    def codec = charset.map { Codec(_) }
     
     /**
      * 	The length of the response body in octets (8-bit bytes)
