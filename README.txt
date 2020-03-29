@@ -36,6 +36,16 @@ Usage Notes
     program startup.
 
 
+v1.1.2  ------------------------------------------
+
+    Updates & Changes
+    -----------------
+
+        isEmpty & nonEmpty methods added to Headers
+
+        basicAuthorization -property added to Headers
+
+
 v1.1.1    ---------------------------------------
 
     Updates & Changes

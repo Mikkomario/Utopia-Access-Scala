@@ -3,7 +3,9 @@ package utopia.access.http
 import scala.collection.immutable.Map
 import utopia.flow.generic.ModelConvertible
 import utopia.flow.datastructure.immutable.Model
+import utopia.flow.util.StringExtensions._
 import utopia.flow.generic.ValueConversions._
+import utopia.flow.util.CollectionExtensions._
 import utopia.flow.generic.FromModelFactory
 import utopia.flow.datastructure.template.Property
 import utopia.flow.datastructure.template
@@ -19,6 +21,8 @@ import utopia.flow.util.Equatable
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import java.util.Base64
+
+import scala.io.Codec
 
 object Headers extends FromModelFactory[Headers]
 {   
@@ -73,6 +77,16 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     // COMPUTED PROPERTIES    -----
     
     /**
+     * @return Whether these headers are empty
+     */
+    def isEmpty = rawFields.isEmpty
+    
+    /**
+     * @return Whether these headers are not empty
+     */
+    def nonEmpty = !isEmpty
+    
+    /**
      * The methods allowed for the server resource
      */
     def allowedMethods = commaSeparatedValues("Allow").flatMap { Method.parse }
@@ -86,29 +100,29 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      * The charsets accepted by the client. Each charset is matched with a weight modifier. Higher 
      * weight charsets should be preferred by the server.
      */
-    def acceptedCharsets = commaSeparatedValues("Accept-Charset").map(_.split(";")).flatMap
-    {
-        set => 
-            val weight = (if (set.length > 1) set(1).double else None) getOrElse 1.0
-            Try(Charset.forName(set.head)).toOption.map(_ -> weight)
-    }.toMap
+    def acceptedCharsets = weightedValues("Accept-Charset").flatMap {
+        case (charset, weight) => Try(Charset.forName(charset)).toOption.map { _ -> weight } }
     
     /**
-     * The charset preferred by the client
+     * The charset preferred by the client. None if no charset is specified.
      */
-    def preferredCharset = 
-    {
-        val accepted = acceptedCharsets
-        if (accepted.isEmpty)
-            None
-        else
-            Some(accepted.maxBy(_._2)._1)
-    }
+    def preferredCharset = acceptedCharsets.maxByOption { _._2 }.map { _._1 }
     
     /**
      * The charset preferred by the client. UTF 8 if the client doesn't specify any other charset
      */
     def preferredCharsetOrUTF8 = preferredCharset getOrElse StandardCharsets.UTF_8
+    
+    /**
+     * @return Languages that are accepted by the client, with weight modifiers. A larger weight means that the language
+     *         is preferred by the client
+     */
+    def acceptedLanguages = weightedValues("Accept-Language")
+    
+    /**
+     * @return The language most preferred by the client. None if not specified.
+     */
+    def preferredLanguage = preferredValue("Accept-Language")
     
     /**
      * The type of the associated content. None if not defined.
@@ -118,18 +132,17 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     /**
      * The character set used in the associated content. None if not defined or unrecognised
      */
-    def charset = 
-    {
-        val cTypeHeader = semicolonSeparatedValues("Content-Type")
-        if (cTypeHeader.size > 1)
-        {
-            Try(Charset.forName(cTypeHeader(1))).toOption
-        }
-        else
-        {
-            None
-        }
-    }
+    def charset = charsetString.flatMap { s => Try { Charset.forName(s) }.toOption }
+    
+    /**
+     * The name of the character set used in the associated content. None if not defined
+     */
+    def charsetString = semicolonSeparatedValues("Content-Type").getOption(1)
+    
+    /**
+     * @return Encoding specified in the content type header (in codec format)
+     */
+    def codec = charset.map { Codec(_) }
     
     /**
      * 	The length of the response body in octets (8-bit bytes)
@@ -147,6 +160,11 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      * HTTP-date, as described in section 3.3.1; it MUST be sent in RFC 1123 [8]-date format.
      */
     def date = timeHeader("Date")
+    
+    /**
+     * @return Whether the date header is defined
+     */
+    def hasDate = isDefined("Date")
     
     /**
      * The location of the generated or searched resource. (Usually) contains the whole url.
@@ -172,6 +190,19 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
       * @return The provided authorization. Eg. "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==". None if no auth header is provided.
       */
     def authorization = apply("Authorization")
+    
+    /**
+     * @return Decrypted Username and password from a basic authorization header. None if the header was missing, not
+     *         a basic authorization or not properly encoded
+     */
+    def basicAuthorization = authorization.flatMap { auth =>
+        val (authType, encodedValue) = auth.splitAtFirst(" ")
+        if (authType ~== "Basic")
+            Try { Base64.getDecoder.decode(encodedValue) }.toOption.map {
+                new String(_, Codec.UTF8.charSet).splitAtFirst(":") }
+        else
+            None
+    }
     
     
     // OPERATORS    ---------------
@@ -243,6 +274,22 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     def semicolonSeparatedValues(headerName: String) = splitValues(headerName, ";")
     
     /**
+     * @param headerName Name of target header
+     * @return All values for the header with their relative weights where a larger value is more preferred
+     */
+    def weightedValues(headerName: String) = commaSeparatedValues(headerName).map {
+        _.split(";") }.map {  set =>
+            val weight = (if (set.length > 1) set(1).double else None) getOrElse 1.0
+            set.head -> weight
+    }.toMap
+    
+    /**
+     * @param headerName Name of target header
+     * @return The most preferred value for this header (based on value weights)
+     */
+    def preferredValue(headerName: String) = weightedValues(headerName).maxByOption { _._2 }.map { _._1 }
+    
+    /**
      * Returns a copy of these headers with a new header. Overwrites any previous values on the 
      * targeted header.
      */
@@ -267,6 +314,14 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
      */
     def withTimeHeader(headerName: String, value: Instant) = withHeader(headerName, 
             DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.ofInstant(value, ZoneOffset.UTC)))
+    
+    /**
+     * @param headerName Name of target header
+     * @param values Header values, each with their own weight
+     * @return A copy of these headers with added weighted headers
+     */
+    def withWeightedHeader(headerName: String, values: Map[String, Double]) = withHeader(headerName,
+        values.map{ case (v, w) => s"$v;q=$w" }.toSeq)
     
     /**
      * Checks whether a method is allowed for the server side resource
@@ -310,6 +365,13 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     }
     
     /**
+     * @param options Available language options
+     * @return The most preferred language from the specified options. None if none of them is accepted.
+     */
+    def getAcceptedLanguage(options: Seq[String]) = acceptedLanguages.filterKeys { lang =>
+        options.exists { _ ~== lang } }.maxByOption { _._2 }.map { _._1 }
+    
+    /**
      * Overwrites the set of accepted content types
      */
     def withAcceptedTypes(types: Seq[ContentType]) = withHeader("Accept", types.map { _.toString })
@@ -322,8 +384,8 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     /**
      * Overwrites the set of accepted charsets
      */
-    def withAcceptedCharsets(charsets: Map[Charset, Double]) = withHeader("Accept-Charset", 
-            charsets.map{ case (c, w) => s"${c.name()};q=$w" }.toSeq)
+    def withAcceptedCharsets(charsets: Map[Charset, Double]) = withWeightedHeader("Accept-Charset",
+        charsets.map { case (charset, wt) => charset.name() -> wt })
     
     /**
      * Overwrites the set of accepted charsets
@@ -333,8 +395,28 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     /**
      * Adds a new charset to the list of accepted charsets
      */
-    def withCharsetAccepted(charset: Charset, weight: Double = 1) = this + ("Accept-Charset", 
+    def withCharsetAccepted(charset: Charset, weight: Double = 1) = this + ("Accept-Charset",
             s"${charset.name()};q=$weight")
+    
+    /**
+     * @param languages Accepted languages with their "weights"
+     * @return A copy of these headers with specified accepted languages
+     */
+    def withAcceptedLanguages(languages: Map[String, Double]) = withWeightedHeader("Accept-Language", languages)
+    
+    /**
+     * @param languages A list of accepted languages
+     * @return A copy of these headers with specified accepted languages
+     */
+    def withAcceptedLanguages(languages: Seq[String]) = withHeader("Accept-Language", languages)
+    
+    /**
+     * @param language Accepted language
+     * @param weight Priority of specified language (default = 1.0)
+     * @return A copy of these headers with specified accepted language added
+     */
+    def withLanguageAccepted(language: String, weight: Double = 1) = this + ("Accept-Language",
+        s"$language;q=$weight")
     
     /**
      * Creates a new headers with the content type (and character set) specified
@@ -376,7 +458,7 @@ class Headers(rawFields: Map[String, String] = HashMap()) extends ModelConvertib
     def withBasicAuthorization(userName: String, password: String) =
     {
         // Encodes the username + password with base64
-        val encoded = Base64.getEncoder.encodeToString((userName + ":" + password).getBytes())
+        val encoded = Base64.getEncoder.encodeToString((userName + ":" + password).getBytes(Codec.UTF8.charSet))
         withAuthorization("Basic " + encoded)
     }
     
