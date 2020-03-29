@@ -3,7 +3,7 @@
     <output-path>$PROJECT_DIR$/out/artifacts/utopia_access_with_sources</output-path>
     <root id="archive" name="utopia-access-with-sources.jar">
       <element id="module-output" name="Utopia-Access-Scala" />
-      <element id="dir-copy" path="$PROJECT_DIR$/src" />
+      <element id="module-source" name="Utopia-Access-Scala" />
     </root>
   </artifact>
 </component>
